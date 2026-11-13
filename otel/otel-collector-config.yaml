@@ -1,0 +1,21 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+processors:
+  memory_limiter: { check_interval: 1s, limit_mib: 256 }
+  batch: {}
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls: { insecure: true }
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  debug/traces: { verbosity: basic }
+  debug/logs: { verbosity: detailed }   # `docker compose logs -f otel-collector` shows app logs
+service:
+  pipelines:
+    traces:  { receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlp/jaeger, debug/traces] }
+    metrics: { receivers: [otlp], processors: [memory_limiter, batch], exporters: [prometheus] }
+    logs:    { receivers: [otlp], processors: [memory_limiter, batch], exporters: [debug/logs] }
